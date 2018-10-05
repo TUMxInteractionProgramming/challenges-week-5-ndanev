@@ -6,7 +6,7 @@ console.log("App is alive");
 var currentChannel;
 
 /** #7 We simply initialize it with the channel selected by default - sevencontinents */
-currentChannel = sevencontinents;
+currentChannel = channels[1];
 
 /** Store my current (sender) location
  */
@@ -75,11 +75,22 @@ function selectTab(tabId) {
     $(tabId).addClass('selected');
 }
 
+//* #10 emoji function
+function listEmojis() {
+    var emojis = require('emojis-list');
+    for (var i = 0; i < emojis.length; i++) {
+        $('#emojis').append(emojis[i]);
+    }
+}
+
 /**
  * toggle (show/hide) the emojis menu
  */
 function toggleEmojis() {
     $('#emojis').toggle(); // #toggle
+
+    //#10 call emoji function
+    listEmojis()
 }
 
 /**
@@ -109,8 +120,21 @@ function sendMessage() {
     var message = new Message($('#message').val());
     console.log("New message:", message);
 
+
+    // #10 #empty message is not sent... using 'if' statement
+    if (message.text.length > 0) {
+
+        // #8 convenient message append with jQuery:
+        $('#messages').append(createMessageElement(message));
+
+        // #10 push the message into the channel array
+        currentChannel.messages.push(createMessageElement(message));
+        currentChannel.messageCount = currentChannel.messageCount + 1
+    }
+
+
     // #8 convenient message append with jQuery:
-    $('#messages').append(createMessageElement(message));
+    //$('#messages').append(createMessageElement(message));
 
     // #8 messages will scroll to a certain point if we apply a certain height, in this case the overall scrollHeight of the messages-div that increases with every message;
     // it would also scroll to the bottom when using a very high number (e.g. 1000000000);
@@ -118,6 +142,7 @@ function sendMessage() {
 
     // #8 clear the message input
     $('#message').val('');
+
 }
 
 /**
@@ -130,31 +155,49 @@ function createMessageElement(messageObject) {
     var expiresIn = Math.round((messageObject.expiresOn - Date.now()) / 1000 / 60);
 
     // #8 message element
-    return '<div class="message'+
+    return '<div class="message' +
         //this dynamically adds the class 'own' (#own) to the #message, based on the
         //ternary operator. We need () in order to not disrupt the return.
         (messageObject.own ? ' own' : '') +
         '">' +
-        '<h3><a href="http://w3w.co/' + messageObject.createdBy + '" target="_blank">'+
+        '<h3><a href="http://w3w.co/' + messageObject.createdBy + '" target="_blank">' +
         '<strong>' + messageObject.createdBy + '</strong></a>' +
         messageObject.createdOn.toLocaleString() +
-        '<em>' + expiresIn+ ' min. left</em></h3>' +
+        '<em>' + expiresIn + ' min. left</em></h3>' +
         '<p>' + messageObject.text + '</p>' +
-        '<button>+5 min.</button>' +
+        '<button class="accent">+5 min.</button>' +
         '</div>';
 }
 
 
-function listChannels() {
+function listChannels(criterion) {
     // #8 channel onload
     //$('#channels ul').append("<li>New Channel</li>")
 
-    // #8 five new channels
-    $('#channels ul').append(createChannelElement(yummy));
-    $('#channels ul').append(createChannelElement(sevencontinents));
-    $('#channels ul').append(createChannelElement(killerapp));
-    $('#channels ul').append(createChannelElement(firstpersononmars));
-    $('#channels ul').append(createChannelElement(octoberfest));
+    // #10 dont duplicate
+    $('#channels ul').empty();
+
+    // #10 using for loop 
+    var i;
+    for (i = 0; i < channels.length; i++) {
+
+        // #10 sort channels 
+        channels.sort(criterion);
+        $('#channels ul').append(createChannelElement(channels[i]));
+    }
+}
+
+/* #10 compare functions */
+function compareNew(a, b) {
+    return (b.createdOn - a.createdOn);
+}
+
+function compareTrending(a, b) {
+    return (b.messageCount - a.messageCount);
+}
+
+function compareFavorites(a, b) {
+    return (b.starred - a.starred);
 }
 
 /**
@@ -192,4 +235,29 @@ function createChannelElement(channelObject) {
 
     // return the complete channel
     return channel;
+}
+
+function addChannel() {
+    //clear messages
+    $('#messages').empty();
+
+    //show channel creation
+    $("#newChannelBar").show();
+    $("#createChannelButton").show();
+
+    //hide channel and chat bar during creation
+    $("#channel-bar").hide();
+    $("#input-button").hide();
+}
+
+function abort() {
+    //show channel and chat bar
+    $("#channel-bar").show();
+    $("#input-button").show();
+
+    //hide channel creation
+    $("#newChannelBar").hide();
+    $("#createChannelButton").hide();
+    $("#newChannelName").val("");
+    $("#message").val("");
 }
